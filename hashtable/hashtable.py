@@ -21,8 +21,9 @@ class HashTable:
     """
 
     def __init__(self, capacity):
-        # Your code here
-
+        self.capacity = capacity  # Number of buckets in the hash table
+        self.hashlist = [None] * capacity #initialize a list with empty slots for capacity
+        self.number_items = 0
 
     def get_num_slots(self):
         """
@@ -34,7 +35,9 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
+        #return len(self.hashlist)
+        return self.capacity
+
 
 
     def get_load_factor(self):
@@ -43,7 +46,10 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
+        #This ratio of the number of pairs to the number of buckets is called the load factor.
+        #Load factor = number of pairs (how many key value pairs inserted) // number of buckets (length of bucket array)
+        return self.number_items / self.capacity
+
 
 
     def fnv1(self, key):
@@ -62,7 +68,15 @@ class HashTable:
 
         Implement this, and/or FNV-1.
         """
-        # Your code here
+        #djb2 String Hashing Algorithm
+        #To insert a key/value pair, the key is first hashed
+        hash = 5381
+
+        for char in key: 
+            hash = (( hash << 5) + hash) + ord(char)
+            return hash 
+        
+       
 
 
     def hash_index(self, key):
@@ -70,8 +84,9 @@ class HashTable:
         Take an arbitrary key and return a valid integer index
         between within the storage capacity of the hash table.
         """
+        #the hash is then taken modulo the size of the array, yielding an index. The key/value pair is then inserted into a bucket at that index.
         #return self.fnv1(key) % self.capacity
-        return self.djb2(key) % self.capacity
+        return self.djb2(key) % self.capacity 
 
     def put(self, key, value):
         """
@@ -81,7 +96,29 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
+        if self.get_load_factor() > .7:
+            self.resize(self.capacity * 2) 
+        #hash the key to get the index
+        index = self.hash_index(key)
+        # check the index, if it's empty put a node there
+        if self.hashlist[index] is None:
+            self.hashlist[index] = HashTableEntry(key, value)
+            self.number_items += 1
+        # otherwise, iterate through the linked list
+        else:
+            current_node = self.hashlist[index]
+            while current_node is not None:
+        ## Check for the key, update value if it's there
+                if current_node.key == key:
+                    current_node.value = value
+                    break
+        ## if we reach the end, add a new node
+                elif current_node.next == None:
+                    current_node.next = HashTableEntry(key, value)
+                    self.number_items += 1
+                    break
+                else:
+                    current_node = current_node.next
 
 
     def delete(self, key):
@@ -92,7 +129,32 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
+        index = self.hash_index(key)
+        # if there's a None at the index
+        if self.hashlist[index] is None:
+            print("WARNING: sound the alarm, key not found")
+            return
+        else:
+            current_node = self.hashlist[index]
+        # If the target node is the head
+            if current_node.key == key:
+                self.hashlist[index] = current_node.next
+                self.number_items -= 1
+            else:
+        # And any other node
+                previous_node = current_node
+                current_node = current_node.next
+                # now we iterate!
+                while current_node is not None:
+                    if current_node.key == key:
+                        previous_node.next = current_node.next
+                        self.number_items -= 1
+                        return
+                    previous_node = current_node
+                    current_node = current_node.next
+        # And if it's not found in the linked list
+                print("WARNING got all the way through and did not find it")
+
 
 
     def get(self, key):
@@ -103,7 +165,19 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
+        index = self.hash_index(key)
+        # if there's nothing at the index
+        if self.hashlist[index] is None:
+            return None
+        # otherwise, go to the index, iterate through the linked list, and look for the key
+        else:
+            current_node = self.hashlist[index]
+            while current_node is not None:
+                if current_node.key == key:
+                    return current_node.value
+                current_node = current_node.next
+            return None
+
 
 
     def resize(self, new_capacity):
@@ -113,7 +187,21 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
+       # save our old storage
+        old_storage = self.hashlist
+        # make a new, bigger storage!
+        self.hashlist = [None] * new_capacity
+        self.capacity = new_capacity
+        # iterate through our hashlist
+        for bucket in old_storage:
+        ## Iterate through every linked list
+            while bucket is not None:
+                ## re-insert key, value
+                key = bucket.key
+                value = bucket.value
+                self.put(key, value)
+                # go on to the next node
+
 
 
 
